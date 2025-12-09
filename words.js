@@ -1,6 +1,7 @@
 // words.js
-// Structure pour gérer des listes de mots par longueur.
-// À TOI ensuite de remplacer/compléter WORD_LISTS avec un vrai dictionnaire libre.
+// Listes de mots par longueur.
+// Pour l’instant, c’est un petit dictionnaire d’exemple.
+// Tu pourras ensuite le remplacer par une grosse liste venant d’un dictionnaire libre.
 
 const WORD_LISTS = {
   6: [
@@ -29,11 +30,11 @@ const WORD_LISTS = {
   10: ["ORDINATEUR", "PROGRAMMER", "CHOCOLATINE", "ENVIRONNEME"],
 };
 
-// Paramètres globaux
+// paramètres façon Tusmo/Sutom
 const MIN_LETTERS = 6;
 const MAX_LETTERS = 10;
-const MAX_ROUNDS = 10; // 10 mots max
-const MAX_ATTEMPTS = 6; // 6 essais max
+const MAX_ROUNDS = 10; // max 10 mots par partie
+const MAX_ATTEMPTS = 6; // 6 essais max par mot
 
 function getRandomWord(length) {
   const list = WORD_LISTS[length];
@@ -44,6 +45,7 @@ function getRandomWord(length) {
   return list[idx].toUpperCase();
 }
 
+// Vérifie qu’un mot existe dans notre “dictionnaire” local
 function isValidWord(word) {
   const len = word.length;
   const list = WORD_LISTS[len];
