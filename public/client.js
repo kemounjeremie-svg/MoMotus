@@ -11,11 +11,11 @@ let hasFinished = false;
 let roundNumber = 1;
 let maxRounds = 10;
 
-// TIMER local
+// timer local par joueur
 let timerInterval = null;
 let startTime = null;
 
-// DOM
+// === DOM ===
 const lobbySection = document.getElementById("lobby");
 const lobbyMessage = document.getElementById("lobby-message");
 const nicknameInput = document.getElementById("nickname");
@@ -25,12 +25,10 @@ const roomCodeInput = document.getElementById("room-code-input");
 
 const roomSection = document.getElementById("room-section");
 const roomCodeDisplay = document.getElementById("room-code-display");
+const inviteCodeSpan = document.getElementById("invite-code");
+const directLinkInput = document.getElementById("direct-link-input");
 const roundDisplay = document.getElementById("round-display");
-const maxRoundsDisplay = document.getElementById("max-rounds-display");
 const timerDisplay = document.getElementById("timer-display");
-
-const inviteCode = document.getElementById("invite-code");
-const inviteLinkInput = document.getElementById("invite-link");
 
 const playersList = document.getElementById("players-list");
 const gridElement = document.getElementById("grid");
@@ -39,6 +37,8 @@ const submitBtn = document.getElementById("submit-btn");
 const gameMessage = document.getElementById("game-message");
 const eventsLog = document.getElementById("events-log");
 const newGameBtn = document.getElementById("new-game-btn");
+
+// ================== Helpers ==================
 
 function showLobbyMessage(text, isError = false) {
   lobbyMessage.textContent = text;
@@ -68,6 +68,7 @@ function createGrid() {
 
       const span = document.createElement("span");
       cell.appendChild(span);
+
       gridElement.appendChild(cell);
     }
   }
@@ -87,20 +88,9 @@ function revealFirstLetters() {
   }
 }
 
-// TIMER
-
-function updateTimerDisplay(elapsedMs) {
-  const totalSeconds = Math.floor(elapsedMs / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  timerDisplay.textContent =
-    String(minutes).padStart(2, "0") + ":" + String(seconds).padStart(2, "0");
-}
-
 function resetTimer() {
   if (timerInterval) clearInterval(timerInterval);
   timerInterval = null;
-  startTime = null;
   updateTimerDisplay(0);
 }
 
@@ -108,13 +98,20 @@ function startTimer() {
   resetTimer();
   startTime = Date.now();
   timerInterval = setInterval(() => {
-    if (hasFinished || !startTime) return;
+    if (hasFinished) return;
     const elapsed = Date.now() - startTime;
     updateTimerDisplay(elapsed);
   }, 500);
 }
 
-function resetGameState() {
+function updateTimerDisplay(ms) {
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+  const seconds = String(totalSeconds % 60).padStart(2, "0");
+  timerDisplay.textContent = `${minutes}:${seconds}`;
+}
+
+function resetGameStateForWord() {
   currentAttempt = 0;
   hasFinished = false;
   showGameMessage("");
@@ -126,17 +123,16 @@ function resetGameState() {
   startTimer();
 }
 
-// INVITATION
+function updateInviteUI(roomCode) {
+  roomCodeDisplay.textContent = roomCode;
+  inviteCodeSpan.textContent = roomCode;
+  roundDisplay.textContent = `${roundNumber} / ${maxRounds}`;
 
-function updateInviteInfo() {
-  if (!currentRoomCode) return;
-  inviteCode.textContent = currentRoomCode;
-  const url = new URL(window.location.href);
-  url.searchParams.set("room", currentRoomCode);
-  inviteLinkInput.value = url.toString();
+  const origin = window.location.origin; // fonctionne en local ET sur Render
+  directLinkInput.value = `${origin}/?room=${roomCode}`;
 }
 
-// HANDLERS
+// ================== Actions ==================
 
 function handleCreateRoom() {
   myNickname = nicknameInput.value.trim() || "Joueur";
@@ -155,17 +151,12 @@ function handleJoinRoom() {
 
 function handleSubmitGuess() {
   if (hasFinished || !currentRoomCode) return;
-
   const guess = guessInput.value.trim();
   if (!guess) {
     showGameMessage("Tape un mot avant de valider.", true);
     return;
   }
-
-  socket.emit("submitGuess", {
-    roomCode: currentRoomCode,
-    guess,
-  });
+  socket.emit("submitGuess", { roomCode: currentRoomCode, guess });
 }
 
 function handleNewGame() {
@@ -173,77 +164,69 @@ function handleNewGame() {
   socket.emit("newGame", { roomCode: currentRoomCode });
 }
 
-// SOCKET EVENTS
+// ================== Socket events ==================
 
-socket.on("roomCreated", (payload) => {
-  const {
+socket.on(
+  "roomCreated",
+  ({
     roomCode,
     wordLength: wl,
     maxAttempts: ma,
     firstLetter: fl,
     roundNumber: rn,
     maxRounds: mr,
-  } = payload;
+  }) => {
+    currentRoomCode = roomCode;
+    wordLength = wl;
+    maxAttempts = ma;
+    firstLetter = fl;
+    roundNumber = rn;
+    maxRounds = mr;
 
-  currentRoomCode = roomCode;
-  wordLength = wl;
-  maxAttempts = ma;
-  firstLetter = fl;
-  roundNumber = rn;
-  maxRounds = mr;
+    lobbySection.style.display = "none";
+    roomSection.style.display = "block";
 
-  lobbySection.style.display = "none";
-  roomSection.style.display = "block";
+    createGrid();
+    revealFirstLetters();
+    updateInviteUI(roomCode);
+    resetGameStateForWord();
 
-  roomCodeDisplay.textContent = roomCode;
-  roundDisplay.textContent = roundNumber;
-  maxRoundsDisplay.textContent = maxRounds;
+    showGameMessage("Partie créée. Tu peux déjà jouer et inviter tes amis !");
+    logEvent(`Tu as créé la salle ${roomCode}.`);
+    guessInput.focus();
+  }
+);
 
-  createGrid();
-  revealFirstLetters();
-  resetGameState();
-  updateInviteInfo();
-
-  showGameMessage("Salle créée. Invite tes amis et commence à jouer !");
-  logEvent(`Tu as créé la salle ${roomCode}.`);
-
-  guessInput.focus();
-});
-
-socket.on("roomJoined", (payload) => {
-  const {
+socket.on(
+  "roomJoined",
+  ({
     roomCode,
     wordLength: wl,
     maxAttempts: ma,
     firstLetter: fl,
     roundNumber: rn,
     maxRounds: mr,
-  } = payload;
+  }) => {
+    currentRoomCode = roomCode;
+    wordLength = wl;
+    maxAttempts = ma;
+    firstLetter = fl;
+    roundNumber = rn;
+    maxRounds = mr;
 
-  currentRoomCode = roomCode;
-  wordLength = wl;
-  maxAttempts = ma;
-  firstLetter = fl;
-  roundNumber = rn;
-  maxRounds = mr;
+    lobbySection.style.display = "none";
+    roomSection.style.display = "block";
 
-  lobbySection.style.display = "none";
-  roomSection.style.display = "block";
+    createGrid();
+    revealFirstLetters();
+    updateInviteUI(roomCode);
+    resetGameStateForWord();
 
-  roomCodeDisplay.textContent = roomCode;
-  roundDisplay.textContent = roundNumber;
-  maxRoundsDisplay.textContent = maxRounds;
-
-  createGrid();
-  revealFirstLetters();
-  resetGameState();
-  updateInviteInfo();
-
-  showGameMessage("Tu as rejoint la salle. Essaie de trouver le mot !");
-  logEvent(`Tu as rejoint la salle ${roomCode}.`);
-
-  guessInput.focus();
-});
+    showGameMessage("Partie rejointe ! Essaie de trouver le mot.");
+    logEvent(`Tu as rejoint la salle ${roomCode}.`);
+    guessInput.focus();
+  }
+);
 
 socket.on("joinError", ({ message }) => {
   showLobbyMessage(message, true);
@@ -254,7 +237,6 @@ socket.on("playerListUpdate", ({ players }) => {
   players.forEach((p) => {
     const li = document.createElement("li");
     li.textContent = p.nickname;
-
     const statusSpan = document.createElement("span");
     statusSpan.classList.add("status");
 
@@ -278,13 +260,13 @@ socket.on("playerListUpdate", ({ players }) => {
 });
 
 socket.on("guessError", ({ message }) => {
+  // Mot invalide, ne compte pas comme essai
   showGameMessage(message, true);
 });
 
 socket.on(
   "guessResult",
   ({ playerId, nickname, guess, statuses, attempts, isCorrect }) => {
-    // On ne remplit la grille que pour NOTRE joueur
     if (playerId === socket.id) {
       const row = currentAttempt;
       if (row >= maxAttempts) return;
@@ -292,12 +274,10 @@ socket.on(
       for (let col = 0; col < wordLength; col++) {
         const cell = getCell(row, col);
         const span = cell.querySelector("span");
-
         if (col === 0) {
           span.textContent = firstLetter;
           continue;
         }
-
         span.textContent = guess[col] || "";
         cell.classList.add("revealed");
         cell.classList.remove("correct", "present", "absent");
@@ -314,11 +294,10 @@ socket.on(
         hasFinished = true;
         guessInput.disabled = true;
         submitBtn.disabled = true;
-        showGameMessage(`Bravo ! Tu as trouvé le mot en ${attempts} essais.`);
+        showGameMessage(`Bravo ! Tu as trouvé le mot !`);
         logEvent(`Tu as trouvé le mot en ${attempts} essais.`);
       }
     } else {
-      // Log pour les autres joueurs
       if (isCorrect) {
         logEvent(`${nickname} a trouvé le mot.`);
       } else {
@@ -335,20 +314,26 @@ socket.on("playerSolved", ({ nickname, attempts, durationSeconds }) => {
 });
 
 socket.on("playerFailed", ({ secretWord }) => {
-  showGameMessage(
-    `Tu as utilisé tes ${maxAttempts} essais. Le mot était "${secretWord}".`,
-    true
-  );
-  hasFinished = true;
-  guessInput.disabled = true;
-  submitBtn.disabled = true;
+  if (!hasFinished) {
+    hasFinished = true;
+    guessInput.disabled = true;
+    submitBtn.disabled = true;
+    showGameMessage(
+      `Tu as utilisé tes ${maxAttempts} essais. Le mot était "${secretWord}".`,
+      true
+    );
+    logEvent(`Échec pour ce mot. C'était "${secretWord}".`);
+  }
 });
 
 socket.on("allSolved", ({ secretWord, roundNumber: rn }) => {
   showGameMessage(
-    `Tous les joueurs ont trouvé le mot "${secretWord}" pour la manche ${rn}. Tu peux lancer la manche suivante.`
+    `Tous les joueurs ont trouvé le mot "${secretWord}". Tu peux lancer la manche suivante.`,
+    false
   );
-  logEvent(`Tous les joueurs ont trouvé le mot "${secretWord}".`);
+  logEvent(
+    `Tous les joueurs ont trouvé le mot "${secretWord}" (manche ${rn}).`
+  );
 });
 
 socket.on(
@@ -368,17 +353,15 @@ socket.on(
     roundNumber = rn;
     maxRounds = mr;
 
-    roomCodeDisplay.textContent = roomCode;
-    roundDisplay.textContent = roundNumber;
-    maxRoundsDisplay.textContent = maxRounds;
-
     createGrid();
     revealFirstLetters();
-    resetGameState();
-    updateInviteInfo();
+    updateInviteUI(roomCode);
+    resetGameStateForWord();
 
-    showGameMessage(`Nouvelle manche ${roundNumber}/${maxRounds} !`);
-    logEvent(`Nouvelle manche ${roundNumber}/${maxRounds} démarrée.`);
+    showGameMessage(`Nouvelle manche ! Mot de ${wordLength} lettres.`);
+    logEvent(
+      `Nouvelle manche : ${wordLength} lettres (manche ${roundNumber}/${maxRounds}).`
+    );
     guessInput.focus();
   }
 );
@@ -387,7 +370,8 @@ socket.on("newGameError", ({ message }) => {
   showGameMessage(message, true);
 });
 
-// DOM events
+// ================== DOM events ==================
+
 createRoomBtn.addEventListener("click", handleCreateRoom);
 joinRoomBtn.addEventListener("click", handleJoinRoom);
 newGameBtn.addEventListener("click", handleNewGame);
@@ -400,14 +384,14 @@ guessInput.addEventListener("keydown", (e) => {
 
 submitBtn.addEventListener("click", handleSubmitGuess);
 
-// Auto-remplissage du code de salle depuis ?room=XXXXX
-(function prefillRoomFromUrl() {
+// Auto-préremplissage du code de salle si lien d’invitation ?room=XXXX
+(function initFromURL() {
   const params = new URLSearchParams(window.location.search);
-  const room = params.get("room");
-  if (room) {
-    roomCodeInput.value = room.toUpperCase();
+  const roomFromUrl = params.get("room");
+  if (roomFromUrl) {
+    roomCodeInput.value = roomFromUrl.toUpperCase();
     showLobbyMessage(
-      `Code ${room.toUpperCase()} pré-rempli depuis un lien d’invitation.`
+      `Tu as été invité dans la salle ${roomFromUrl.toUpperCase()}. Entre ton pseudo puis clique sur "Rejoindre".`
     );
   }
 })();

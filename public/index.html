@@ -12,7 +12,7 @@
         <h1>MoMotus – Tusmo Multi</h1>
         <p>
           Crée une salle, invite tes amis avec un code ou un lien, et devinez
-          ensemble jusqu’à 10 mots de 6 à 10 lettres.
+          ensemble jusqu'à 10 mots de 6 à 10 lettres.
         </p>
       </header>
 
@@ -21,11 +21,11 @@
         <section id="lobby">
           <div class="field">
             <label for="nickname">Ton pseudo</label>
-            <input id="nickname" type="text" placeholder="Ex : Jerem42" />
+            <input id="nickname" type="text" placeholder="Ex : Jerem" />
           </div>
 
           <div class="lobby-actions">
-            <button id="create-room-btn">Créer une salle</button>
+            <button id="create-room-btn">Créer une partie</button>
           </div>
 
           <div class="field join-section">
@@ -39,76 +39,63 @@
               />
               <button id="join-room-btn">Rejoindre</button>
             </div>
-            <p class="hint">
-              Tu peux aussi cliquer sur un lien d’invitation qui pré-remplit ce
-              code.
-            </p>
           </div>
 
           <p id="lobby-message" class="message"></p>
         </section>
 
-        <!-- SALLE -->
+        <!-- ROOM -->
         <section id="room-section" style="display: none">
           <div class="room-header">
-            <div>
-              <p>Salle : <span id="room-code-display"></span></p>
+            <div class="room-header-left">
               <p>
-                Manche : <span id="round-display"></span>/<span
-                  id="max-rounds-display"
-                ></span>
+                Salle : <strong><span id="room-code-display"></span></strong>
               </p>
+              <p>Manche : <span id="round-display"></span></p>
+              <p>
+                Invite tes amis avec ce code :
+                <strong><span id="invite-code"></span></strong>
+              </p>
+              <p>Ou en leur envoyant ce lien direct :</p>
+              <input id="direct-link-input" type="text" readonly />
             </div>
-            <div>
+            <div class="room-header-right">
               <p>Temps : <span id="timer-display">00:00</span></p>
             </div>
           </div>
 
-          <div class="invite-panel">
-            <p>
-              Invite tes amis avec ce code : <strong id="invite-code"></strong>
-            </p>
-            <p>Ou en leur envoyant ce lien direct :</p>
-            <input id="invite-link" type="text" readonly />
+          <div class="players-panel">
+            <h2>Joueurs</h2>
+            <ul id="players-list"></ul>
           </div>
 
-          <div class="layout">
-            <div class="players-panel">
-              <h2>Joueurs</h2>
-              <ul id="players-list"></ul>
-            </div>
+          <div id="grid" class="grid"></div>
 
-            <div class="game-panel">
-              <div id="grid" class="grid"></div>
-
-              <div class="controls">
-                <input
-                  id="guess-input"
-                  type="text"
-                  autocomplete="off"
-                  placeholder="Tape ton mot et appuie sur Entrée"
-                />
-                <button id="submit-btn">Valider</button>
-              </div>
-
-              <p id="game-message" class="message"></p>
-
-              <div class="room-actions">
-                <button id="new-game-btn" class="secondary-btn">
-                  Nouvelle manche
-                </button>
-              </div>
-
-              <div id="events-log" class="events-log"></div>
-            </div>
+          <div class="controls">
+            <input
+              id="guess-input"
+              type="text"
+              autocomplete="off"
+              placeholder="Tape ton mot et appuie sur Entrée"
+            />
+            <button id="submit-btn">Valider</button>
           </div>
+
+          <p id="game-message" class="message"></p>
+
+          <div class="room-actions">
+            <button id="new-game-btn" class="secondary-btn">
+              Nouvelle manche
+            </button>
+          </div>
+
+          <div id="events-log" class="events-log"></div>
         </section>
       </main>
 
       <footer>
         <small
-          >MoMotus – fan game non officiel inspiré de Tusmo / Sutom /
-          Motus.</small
+          >Clone fan-made, non officiel. Fait avec ❤️ par Jerem & IA.</small
         >
       </footer>
     </div>
