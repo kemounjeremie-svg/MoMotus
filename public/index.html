@@ -21,7 +21,7 @@
         <section id="lobby">
           <div class="field">
             <label for="nickname">Ton pseudo</label>
-            <input id="nickname" type="text" placeholder="Ex : Jerem" />
+            <input id="nickname" type="text" placeholder="Ex: Jerem" />
           </div>
 
           <div class="lobby-actions">
@@ -47,21 +47,27 @@
         <!-- ROOM -->
         <section id="room-section" style="display: none">
           <div class="room-header">
-            <div class="room-header-left">
+            <div>
+              <p>Salle : <span id="room-code-display"></span></p>
               <p>
-                Salle : <strong><span id="room-code-display"></span></strong>
+                Manche : <span id="round-display">1</span>/<span
+                  id="max-rounds-display"
+                  >10</span
+                >
               </p>
-              <p>Manche : <span id="round-display"></span></p>
-              <p>
-                Invite tes amis avec ce code :
-                <strong><span id="invite-code"></span></strong>
-              </p>
-              <p>Ou en leur envoyant ce lien direct :</p>
-              <input id="direct-link-input" type="text" readonly />
             </div>
             <div class="room-header-right">
               <p>Temps : <span id="timer-display">00:00</span></p>
             </div>
+          </div>
+
+          <div class="invite-block">
+            <p>
+              Invite tes amis avec ce code :
+              <strong id="room-code-invite"></strong>
+            </p>
+            <p>Ou en leur envoyant ce lien direct :</p>
+            <input id="direct-link-input" type="text" readonly />
           </div>
 
           <div class="players-panel">
@@ -76,7 +82,7 @@
               id="guess-input"
               type="text"
               autocomplete="off"
-              placeholder="Tape ton mot et appuie sur Entrée"
+              placeholder="Tape ton mot"
             />
             <button id="submit-btn">Valider</button>
           </div>
@@ -85,7 +91,7 @@
 
           <div class="room-actions">
             <button id="new-game-btn" class="secondary-btn">
-              Nouvelle manche
+              Nouvelle partie
             </button>
           </div>
 
@@ -94,9 +100,7 @@
       </main>
 
       <footer>
-        <small
-          >Clone fan-made, non officiel. Fait avec ❤️ par Jerem & IA.</small
-        >
+        <small>Clone fan-made, non officiel. Fait avec ❤️</small>
       </footer>
     </div>
 
