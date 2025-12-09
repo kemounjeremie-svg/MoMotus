@@ -34,10 +34,28 @@ function getRandomWord(length) {
 }
 
 function isValidWord(word) {
-  const len = word.length;
-  const list = WORD_LISTS[len];
-  if (!list) return false;
-  return list.includes(word.toUpperCase());
+  // Normalisation
+  const w = (word || "")
+    .trim()
+    .toUpperCase()
+    .replace(/É|È|Ê/g, "E")
+    .replace(/À|Â/g, "A")
+    .replace(/Î/g, "I")
+    .replace(/Ô/g, "O")
+    .replace(/Û/g, "U");
+
+  const len = w.length;
+
+  // Longueur entre 6 et 10 lettres
+  if (len < MIN_LETTERS || len > MAX_LETTERS) return false;
+
+  // Uniquement des lettres A-Z
+  if (!/^[A-Z]+$/.test(w)) return false;
+
+  // ⚠️ MODE DEV :
+  // Pour l’instant, on considère que tout mot bien formé est "valide".
+  // (On branchera plus tard un vrai dictionnaire français libre.)
+  return true;
 }
 
 module.exports = {
