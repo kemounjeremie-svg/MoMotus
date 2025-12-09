@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <title>Tusmo Multi – Salons privés</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="game-container">
+      <header>
+        <h1>Tusmo – Multi</h1>
+        <p>
+          Crée une partie, invite tes amis avec le code, et voyez qui trouve le
+          mot en premier !
+        </p>
+      </header>
+
+      <main>
+        <section id="lobby">
+          <div class="field">
+            <label for="nickname">Ton pseudo</label>
+            <input id="nickname" type="text" placeholder="Ex: Jerem42" />
+          </div>
+
+          <div class="lobby-actions">
+            <button id="create-room-btn">Créer une partie</button>
+          </div>
+
+          <div class="field join-section">
+            <label for="room-code-input">Code de salle</label>
+            <div class="join-inline">
+              <input
+                id="room-code-input"
+                type="text"
+                maxlength="5"
+                placeholder="ABCDE"
+              />
+              <button id="join-room-btn">Rejoindre</button>
+            </div>
+          </div>
+
+          <p id="lobby-message" class="message"></p>
+        </section>
+
+        <section id="room-section" style="display: none">
+          <div class="room-header">
+            <p>Salle : <span id="room-code-display"></span></p>
+            <p>Temps : <span id="timer-display">00:00</span></p>
+            <p class="room-info">
+              Partage le code avec tes amis pour qu'ils rejoignent.
+            </p>
+          </div>
+
+          <div class="players-panel">
+            <h2>Joueurs</h2>
+            <ul id="players-list"></ul>
+          </div>
+
+          <div id="grid" class="grid"></div>
+
+          <div class="controls">
+            <input
+              id="guess-input"
+              type="text"
+              autocomplete="off"
+              placeholder="Tape ton mot"
+            />
+            <button id="submit-btn">Valider</button>
+          </div>
+
+          <p id="game-message" class="message"></p>
+
+          <div class="room-actions">
+            <button id="new-game-btn" class="secondary-btn">
+              Nouvelle partie
+            </button>
+          </div>
+
+          <div id="events-log" class="events-log"></div>
+        </section>
+      </main>
+
+      <footer>
+        <small>Clone fan-made, non officiel. Fait avec ❤️</small>
+      </footer>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="client.js"></script>
+  </body>
+</html>
