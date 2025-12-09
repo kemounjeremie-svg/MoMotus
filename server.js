@@ -8,29 +8,30 @@ const {
   MIN_LETTERS,
   MAX_LETTERS,
   MAX_ROUNDS,
-  MAX_ATTEMPTS,
+  MAX_ATTEMPTS
 } = require("./words");
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+  cors: {
+    origin: "*"
+  }
+});
 
 app.use(express.static("public"));
 
 const PORT = process.env.PORT || 3000;
 
-// Structure d'une room :
+// room structure:
 // roomCode: {
 //   secretWord,
 //   wordLength,
-//   maxAttempts,   // 6
-//   roundIndex,    // 0 → 1er mot, 1 → 2e mot, ...
-//   maxRounds,     // 10
+//   roundIndex,  // 0 → first word
+//   maxRounds,   // 10
+//   maxAttempts, // 6
 //   players: {
-//     socketId: {
-//       nickname, attempts, finished, won,
-//       startTime, endTime, durationMs
-//     }
+//     socketId: { nickname, attempts, finished, won, startTime, endTime, durationMs }
 //   },
 //   createdAt,
 // }
@@ -45,7 +46,6 @@ function generateRoomCode() {
   return code;
 }
 
-// 0 → 6 lettres, 1 → 7, 2 → 8, 3 → 9, >=4 → 10
 function evalWordLengthForRound(roundIndex) {
   const base = MIN_LETTERS + roundIndex;
   return base > MAX_LETTERS ? MAX_LETTERS : base;
@@ -59,7 +59,6 @@ function evaluateGuess(secretWord, guess) {
     letterCount[ch] = (letterCount[ch] || 0) + 1;
   }
 
-  // lettres bien placées
   for (let i = 0; i < secretWord.length; i++) {
     if (guess[i] === secretWord[i]) {
       result[i] = "correct";
@@ -67,7 +66,6 @@ function evaluateGuess(secretWord, guess) {
     }
   }
 
-  // lettres présentes mais mal placées
   for (let i = 0; i < secretWord.length; i++) {
     if (result[i] === "correct") continue;
     const ch = guess[i];
@@ -100,14 +98,13 @@ function formatPlayers(roomCode) {
     attempts: p.attempts,
     finished: p.finished,
     won: p.won,
-    durationSeconds: p.durationMs ? Math.floor(p.durationMs / 1000) : null,
+    durationSeconds: p.durationMs ? Math.floor(p.durationMs / 1000) : null
   }));
 }
 
 io.on("connection", (socket) => {
-  console.log("Nouveau client :", socket.id);
+  console.log("Client connecté :", socket.id);
 
-  // Création de salle
   socket.on("createRoom", ({ nickname }) => {
     const roomCode = generateRoomCode();
     const roundIndex = 0;
@@ -121,7 +118,7 @@ io.on("connection", (socket) => {
       roundIndex,
       maxRounds: MAX_ROUNDS,
       players: {},
-      createdAt: Date.now(),
+      createdAt: Date.now()
     };
 
     rooms[roomCode].players[socket.id] = {
@@ -131,7 +128,7 @@ io.on("connection", (socket) => {
       won: false,
       startTime: Date.now(),
       endTime: null,
-      durationMs: null,
+      durationMs: null
     };
 
     socket.join(roomCode);
@@ -140,13 +137,13 @@ io.on("connection", (socket) => {
       roomCode,
       wordLength,
       maxAttempts: MAX_ATTEMPTS,
-      firstLetter: secretWord[0],
+      firstLetter: rooms[roomCode].secretWord[0],
       roundNumber: roundIndex + 1,
-      maxRounds: MAX_ROUNDS,
+      maxRounds: MAX_ROUNDS
     });
 
     io.to(roomCode).emit("playerListUpdate", {
-      players: formatPlayers(roomCode),
+      players: formatPlayers(roomCode)
     });
 
     console.log(
@@ -154,11 +151,10 @@ io.on("connection", (socket) => {
     );
   });
 
-  // Rejoindre une salle
   socket.on("joinRoom", ({ roomCode, nickname }) => {
     roomCode = (roomCode || "").toUpperCase().trim();
-
     const room = rooms[roomCode];
+
     if (!room) {
       socket.emit("joinError", { message: "Salle introuvable." });
       return;
@@ -173,7 +169,7 @@ io.on("connection", (socket) => {
       won: false,
       startTime: Date.now(),
       endTime: null,
-      durationMs: null,
+      durationMs: null
     };
 
     socket.emit("roomJoined", {
@@ -182,17 +178,16 @@ io.on("connection", (socket) => {
       maxAttempts: room.maxAttempts,
       firstLetter: room.secretWord[0],
       roundNumber: room.roundIndex + 1,
-      maxRounds: room.maxRounds,
+      maxRounds: room.maxRounds
     });
 
     io.to(roomCode).emit("playerListUpdate", {
-      players: formatPlayers(roomCode),
+      players: formatPlayers(roomCode)
     });
 
     console.log(`${nickname} a rejoint ${roomCode}`);
   });
 
-  // Proposition de mot
   socket.on("submitGuess", ({ roomCode, guess }) => {
     roomCode = (roomCode || "").toUpperCase().trim();
     const room = rooms[roomCode];
@@ -203,31 +198,29 @@ io.on("connection", (socket) => {
 
     const normalizedGuess = normalizeGuess(guess);
 
-    // Longueur incorrecte
     if (normalizedGuess.length !== room.wordLength) {
       socket.emit("guessError", {
-        message: `Le mot doit faire ${room.wordLength} lettres.`,
+        message: `Le mot doit faire ${room.wordLength} lettres.`
       });
       return;
     }
 
-    // Tusmo : la première lettre doit rester la même
     if (normalizedGuess[0] !== room.secretWord[0]) {
       socket.emit("guessError", {
-        message: `Le mot doit commencer par "${room.secretWord[0]}".`,
+        message: `Le mot doit commencer par "${room.secretWord[0]}".`
       });
       return;
     }
 
-    // Mot inexistant → ne compte pas comme essai
     if (!isValidWord(normalizedGuess)) {
       socket.emit("guessError", {
-        message: `Ce mot n'existe pas dans le dictionnaire (il ne compte pas comme essai).`,
+        message:
+          "Ce mot n'existe pas dans le dictionnaire français (il ne compte pas comme un essai)."
       });
       return;
     }
 
-    // Ici seulement on consomme un essai
+    // mot valide → on consomme un essai
     player.attempts += 1;
 
     const statuses = evaluateGuess(room.secretWord, normalizedGuess);
@@ -238,7 +231,6 @@ io.on("connection", (socket) => {
       player.won = true;
       player.endTime = Date.now();
       player.durationMs = player.endTime - player.startTime;
-
       const durationSeconds = Math.floor(player.durationMs / 1000);
 
       io.to(roomCode).emit("playerSolved", {
@@ -246,10 +238,9 @@ io.on("connection", (socket) => {
         nickname: player.nickname,
         attempts: player.attempts,
         durationSeconds,
-        secretWord: room.secretWord,
+        secretWord: room.secretWord
       });
 
-      // Est-ce que tout le monde a trouvé ce mot ?
       const allSolved =
         Object.values(room.players).length > 0 &&
         Object.values(room.players).every((p) => p.won);
@@ -257,16 +248,15 @@ io.on("connection", (socket) => {
       if (allSolved) {
         io.to(roomCode).emit("allSolved", {
           secretWord: room.secretWord,
-          roundNumber: room.roundIndex + 1,
+          roundNumber: room.roundIndex + 1
         });
       }
     }
 
-    // Joueur à court d’essais
     if (!isCorrect && player.attempts >= room.maxAttempts) {
       player.finished = true;
       io.to(socket.id).emit("playerFailed", {
-        secretWord: room.secretWord,
+        secretWord: room.secretWord
       });
     }
 
@@ -276,15 +266,14 @@ io.on("connection", (socket) => {
       guess: normalizedGuess,
       statuses,
       attempts: player.attempts,
-      isCorrect,
+      isCorrect
     });
 
     io.to(roomCode).emit("playerListUpdate", {
-      players: formatPlayers(roomCode),
+      players: formatPlayers(roomCode)
     });
   });
 
-  // Nouvelle manche (mot suivant de la “défense”)
   socket.on("newGame", ({ roomCode }) => {
     roomCode = (roomCode || "").toUpperCase().trim();
     const room = rooms[roomCode];
@@ -299,14 +288,15 @@ io.on("connection", (socket) => {
 
     if (!allSolved) {
       socket.emit("newGameError", {
-        message: "Tous les joueurs n'ont pas encore trouvé le mot.",
+        message: "Tous les joueurs n'ont pas encore trouvé le mot."
       });
       return;
     }
 
     if (room.roundIndex + 1 >= room.maxRounds) {
       socket.emit("newGameError", {
-        message: "Nombre maximum de mots atteint pour cette partie (10).",
+        message:
+          "Nombre maximum de mots atteint pour cette partie (10 manches)."
       });
       return;
     }
@@ -332,17 +322,15 @@ io.on("connection", (socket) => {
       maxAttempts: room.maxAttempts,
       firstLetter: room.secretWord[0],
       roundNumber: room.roundIndex + 1,
-      maxRounds: room.maxRounds,
+      maxRounds: room.maxRounds
     });
 
     io.to(roomCode).emit("playerListUpdate", {
-      players: formatPlayers(roomCode),
+      players: formatPlayers(roomCode)
     });
 
     console.log(
-      `Nouvelle manche ${room.roundIndex + 1}/${
-        room.maxRounds
-      } dans ${roomCode} : "${room.secretWord}" (${room.wordLength} lettres)`
+      `Nouvelle manche dans ${roomCode} : "${room.secretWord}" (${room.wordLength} lettres), manche ${room.roundIndex + 1}/${room.maxRounds}`
     );
   });
 
@@ -354,7 +342,7 @@ io.on("connection", (socket) => {
         delete room.players[socket.id];
 
         io.to(roomCode).emit("playerListUpdate", {
-          players: formatPlayers(roomCode),
+          players: formatPlayers(roomCode)
         });
 
         if (Object.keys(room.players).length === 0) {

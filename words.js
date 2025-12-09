@@ -1,7 +1,4 @@
 // words.js
-// Listes de mots par longueur.
-// Pour l’instant, c’est un petit dictionnaire d’exemple.
-// Tu pourras ensuite le remplacer par une grosse liste venant d’un dictionnaire libre.
 
 const WORD_LISTS = {
   6: [
@@ -16,25 +13,16 @@ const WORD_LISTS = {
     "FUMEUR",
     "AVIONS",
   ],
-  7: [
-    "ARBRENT",
-    "CHEMINS",
-    "VOITURE",
-    "CHAISES",
-    "LUMIERE",
-    "FEUILLE",
-    "BONHEUR",
-  ],
-  8: ["ORDINATE", "MONTAGNE", "CARNETTE", "LANTERNE", "BIBLIOTE"],
-  9: ["ABRICOTER", "MUSICIENS", "TELEPHONE", "ORDINATEU"],
-  10: ["ORDINATEUR", "PROGRAMMER", "CHOCOLATINE", "ENVIRONNEME"],
+  7: ["ARBRENT", "CHEMINS", "VOITURE", "CHAISES", "LUMIERE", "FEUILLE"],
+  8: ["ORDINATE", "MONTAGNE", "LANTERNE", "BIBLIOTE"],
+  9: ["MUSICIENS", "TELEPHONE", "ORDINATEU"],
+  10: ["ORDINATEUR", "PROGRAMMER", "CHOCOLATINE"],
 };
 
-// paramètres façon Tusmo/Sutom
 const MIN_LETTERS = 6;
 const MAX_LETTERS = 10;
-const MAX_ROUNDS = 10; // max 10 mots par partie
-const MAX_ATTEMPTS = 6; // 6 essais max par mot
+const MAX_ROUNDS = 10;
+const MAX_ATTEMPTS = 6;
 
 function getRandomWord(length) {
   const list = WORD_LISTS[length];
@@ -45,7 +33,6 @@ function getRandomWord(length) {
   return list[idx].toUpperCase();
 }
 
-// Vérifie qu’un mot existe dans notre “dictionnaire” local
 function isValidWord(word) {
   const len = word.length;
   const list = WORD_LISTS[len];
